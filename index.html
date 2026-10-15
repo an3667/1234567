@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mây Nhỏ Phiêu Lưu</title>
+
+<style>
+:root {
+  --ink: #44364f;
+  --pink: #ff9fbd;
+  --cream: #fff9ed;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 15% 10%, #fff4d9, transparent 30%),
+    linear-gradient(135deg, #fce2ee, #e3e4ff 55%, #d9f5f0);
+  font-family: system-ui, "Segoe UI", sans-serif;
+  color: var(--ink);
+}
+
+.game-shell {
+  width: min(100%, 1000px);
+  background: #fffaf4;
+  border: 4px solid white;
+  border-radius: 24px;
+  box-shadow: 0 18px 50px #67528c2a;
+  overflow: hidden;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  background: linear-gradient(90deg, #ffd9e7, #eee4ff);
+  border-bottom: 2px solid white;
+}
+
+.brand {
+  font-weight: 900;
+  font-size: clamp(18px, 3vw, 25px);
+}
+
+.brand span {
+  color: #ed7da6;
+}
+
+.stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.pill {
+  background: #ffffffc9;
+  border: 1px solid white;
+  border-radius: 999px;
+  padding: 6px 11px;
+  white-space: nowrap;
+}
+
+.game-area {
+  position: relative;
+  background: #c8e9ed;
+  line-height: 0;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  touch-action: none;
+  image-rendering: pixelated;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: #44364f42;
+  line-height: 1.45;
+}
+
+.panel {
+  width: min(94%, 440px);
+  padding: 22px;
+  background: #fffaf4;
+  border: 3px solid white;
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: 0 10px 30px #44364f2c;
+}
+
+.panel h1 {
+  font-size: clamp(24px, 4vw, 34px);
+  margin: 0 0 8px;
+  color: #db719b;
+}
+
+.panel p {
+  margin: 8px 0 16px;
+  font-size: 14px;
+}
+
+button {
+  font: inherit;
+  font-weight: 850;
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 18px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.12s;
+}
+
+button:active {
+  transform: scale(0.96);
+}
+
+.primary {
+  background: linear-gradient(135deg, #ff9fbd, #ffbf9c);
+  color: #4c3348;
+  box-shadow: 0 4px 0 #e982a1;
+}
+
+.controls-note {
+  padding: 12px 16px 4px;
+  text-align: center;
+  font-size: 13px;
+  color: #695975;
+  line-height: 1.5;
+}
+
+.mobile-controls {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px 14px;
+  background: #fffaf4;
+}
+
+.pad {
+  display: flex;
+  gap: 8px;
+}
+
+.control-btn {
+  width: 54px;
+  height: 50px;
+  padding: 0;
+  border: 2px solid white;
+  background: #f0e7ff;
+color: #564777;
+  font-size: 22px;
+  box-shadow: 0 3px 0 #d6c8f6;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.control-btn.action {
+  width: 66px;
+  height: 54px;
+  background: #ffe0e9;
+  box-shadow: 0 3px 0 #f3b5ca;
+  font-size: 14px;
+}
+
+.footer {
+  padding: 10px 16px 14px;
+  text-align: center;
+  font-size: 12px;
+  color: #86758e;
+}
+
+@media (pointer: coarse), (max-width: 720px) {
+  body {
+    padding: 6px;
+  }
+
+  .game-shell {
+    border-width: 2px;
+    border-radius: 16px;
+  }
+
+  .mobile-controls {
+    display: flex;
+  }
+
+  .controls-note {
+    font-size: 12px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="game-shell">
+
+  <div class="topbar">
+    <div class="brand">☁️ Mây Nhỏ <span>Phiêu Lưu</span></div>
+
+    <div class="stats">
+      <div class="pill" id="levelLabel">🌷 Màn 1/3</div>
+      <div class="pill" id="keyLabel">🗝️ 0/3</div>
+      <div class="pill" id="heartLabel">💗 💗 💗</div>
+    </div>
+  </div>
+
+  <div class="game-area">
+    <canvas id="game" width="960" height="540"></canvas>
+
+    <div class="overlay" id="overlay">
+      <div class="panel">
+        <h1 id="panelTitle">☁️ Mây Nhỏ Phiêu Lưu</h1>
+
+        <p id="panelText">
+          Đi qua những vùng đất pastel, thu thập chìa khóa
+          và tìm cánh cổng thần kỳ. Nhớ tránh quái vật nhé!
+        </p>
+
+        <p>
+          <b>Máy tính:</b> A/D hoặc ←/→ để di chuyển,
+          W/↑/Space để nhảy, J/X để tạo phép thuật.
+        </p>
+
+        <p>
+          <b>Điện thoại:</b> dùng các nút điều khiển
+          bên dưới màn chơi.
+        </p>
+
+        <button class="primary" id="mainButton">
+          Bắt đầu chơi ✨
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mobile-controls">
+    <div class="pad">
+      <button class="control-btn" data-hold="left">◀</button>
+      <button class="control-btn" data-hold="right">▶</button>
+    </div>
+
+    <div class="pad">
+      <button class="control-btn action" data-action="attack">
+        ✨ Phép
+      </button>
+
+      <button class="control-btn action" data-action="jump">
+        Nhảy ⤴
+      </button>
+    </div>
+  </div>
+
+  <div class="controls-note">
+    Mục tiêu: nhặt đủ 3 chìa khóa rồi chạm vào cổng phát sáng.
+    Màn 2: chạm công tắc tím để mở cầu.
+  </div>
+
+  <div class="footer">
+    Mây Nhỏ Phiêu Lưu · HTML, CSS và JavaScript
+  </div>
+
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const W = canvas.width;
+  const H = canvas.height;
+
+  const overlay = document.getElementById("overlay");
+  const panelTitle = document.getElementById("panelTitle");
+  const panelText = document.getElementById("panelText");
+  const mainButton = document.getElementById("mainButton");
+
+  const levelLabel = document.getElementById("levelLabel");
+  const keyLabel = document.getElementById("keyLabel");
+  const heartLabel = document.getElementById("heartLabel");
+const keyState = Object.create(null);
+
+  const touchState = {
+    left: false,
+    right: false
+  };
+
+  let gameState = "menu";
+  let levelIndex = 0;
+  let level;
+  let player;
+  let cameraX = 0;
+  let frame = 0;
+
+  let hearts = 3;
+  let keysFound = 0;
+  let toast = "";
+  let toastTimer = 0;
+  let flashTimer = 0;
+
+  let particles = [];
+  let attackCooldown = 0;
+  let jumpQueued = false;
+  let attackQueued = false;
+
+  // Dữ liệu của ba màn chơi.
+  const levels = [
+    {
+      name: "Đồng cỏ kẹo ngọt",
+      width: 1720,
+      sky: ["#c9f0ed", "#ffe4ed"],
+
+      solids: [
+        {x:0, y:486, w:470, h:90},
+        {x:560, y:486, w:420, h:90},
+        {x:1070, y:486, w:650, h:90},
+
+        {x:160, y:397, w:150, h:18},
+        {x:365, y:337, w:125, h:18},
+        {x:625, y:410, w:135, h:18},
+        {x:810, y:352, w:115, h:18},
+        {x:1120, y:408, w:130, h:18},
+        {x:1320, y:350, w:130, h:18}
+      ],
+
+      keys: [
+        {x:230, y:360},
+        {x:675, y:370},
+        {x:1370, y:310}
+      ],
+
+      monsters: [
+        {x:670, min:620, max:745},
+        {x:1170, min:1090, max:1240},
+        {x:1470, min:1400, max:1550}
+      ],
+
+      portal: {x:1625, y:406, w:46, h:80},
+      switch: null,
+      bridge: null
+    },
+
+    {
+      name: "Thung lũng bí mật",
+      width: 1830,
+      sky: ["#d9e3ff", "#dff9ed"],
+
+      solids: [
+        {x:0, y:486, w:370, h:90},
+        {x:480, y:486, w:300, h:90},
+        {x:980, y:486, w:270, h:90},
+        {x:1360, y:486, w:470, h:90},
+
+        {x:130, y:405, w:130, h:18},
+        {x:330, y:345, w:110, h:18},
+        {x:545, y:390, w:130, h:18},
+        {x:610, y:315, w:120, h:18},
+        {x:1040, y:398, w:120, h:18},
+        {x:1150, y:335, w:115, h:18},
+        {x:1415, y:400, w:120, h:18},
+        {x:1580, y:340, w:125, h:18}
+      ],
+
+      keys: [
+        {x:205, y:365},
+        {x:660, y:275},
+        {x:1635, y:300}
+      ],
+
+      monsters: [
+        {x:555, min:500, max:740},
+        {x:1080, min:1000, max:1190},
+        {x:1470, min:1390, max:1590}
+      ],
+
+      portal: {x:1740, y:406, w:46, h:80},
+
+      switch: {x:720, y:450, w:34, h:36},
+      bridge: {x:780, y:438, w:200, h:18}
+    },
+
+    {
+      name: "Đêm sao lấp lánh",
+      width: 2040,
+      sky: ["#424a7c", "#b4a4e8"],
+
+      solids: [
+        {x:0, y:486, w:500, h:90},
+        {x:610, y:486, w:380, h:90},
+        {x:1080, y:486, w:400, h:90},
+        {x:1580, y:486, w:460, h:90},
+
+        {x:180, y:405, w:130, h:18},
+        {x:360, y:345, w:125, h:18},
+        {x:635, y:402, w:130, h:18},
+        {x:820, y:335, w:130, h:18},
+        {x:1095, y:410, w:130, h:18},
+        {x:1270, y:348, w:130, h:18},
+        {x:1615, y:405, w:120, h:18},
+        {x:1780, y:345, w:130, h:18}
+      ],
+
+      keys: [
+        {x:420, y:305},
+        {x:885, y:295},
+        {x:1825, y:305}
+      ],
+
+      monsters: [
+        {x:260, min:200, max:420},
+        {x:690, min:635, max:900},
+{x:1200, min:1110, max:1360},
+        {x:1680, min:1600, max:1840}
+      ],
+
+      portal: {x:1950, y:406, w:46, h:80},
+      switch: null,
+      bridge: null
+    }
+  ];
+
+  function clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function setToast(text, duration = 130) {
+    toast = text;
+    toastTimer = duration;
+  }
+
+  function updateHUD() {
+    levelLabel.textContent = `🌷 Màn ${levelIndex + 1}/3`;
+    keyLabel.textContent = `🗝️ ${keysFound}/3`;
+
+    heartLabel.textContent =
+      "💗 ".repeat(Math.max(0, hearts)).trim() || "♡ Hết tim";
+  }
+
+  function loadLevel(index) {
+    levelIndex = index;
+    level = clone(levels[index]);
+
+    keysFound = 0;
+    cameraX = 0;
+
+    player = {
+      x: 48,
+      y: 430,
+      w: 30,
+      h: 48,
+      vx: 0,
+      vy: 0,
+      grounded: false,
+      face: 1,
+      invincible: 70,
+      attackTimer: 0
+    };
+
+    level.keys.forEach(k => k.taken = false);
+
+    level.monsters.forEach(m => {
+      m.y = 450;
+      m.w = 36;
+      m.h = 36;
+      m.dir = 1;
+      m.hp = 2;
+      m.alive = true;
+    });
+
+    if (level.switch) {
+      level.switch.active = false;
+    }
+
+    particles = [];
+    attackCooldown = 0;
+    jumpQueued = false;
+    attackQueued = false;
+
+    updateHUD();
+    setToast(level.name, 100);
+  }
+
+  function openPanel(title, text, buttonText, state) {
+    gameState = state;
+    panelTitle.textContent = title;
+    panelText.textContent = text;
+    mainButton.textContent = buttonText;
+    overlay.style.display = "flex";
+  }
+
+  function startGame() {
+    hearts = 3;
+    loadLevel(0);
+    gameState = "playing";
+    overlay.style.display = "none";
+  }
+
+  mainButton.addEventListener("click", () => {
+    if (
+      gameState === "menu" ||
+      gameState === "dead" ||
+      gameState === "won"
+    ) {
+      startGame();
+    } else if (gameState === "levelDone") {
+      loadLevel(levelIndex + 1);
+      gameState = "playing";
+      overlay.style.display = "none";
+    } else if (gameState === "paused") {
+      gameState = "playing";
+      overlay.style.display = "none";
+    }
+  });
+
+  // Điều khiển bàn phím.
+  window.addEventListener("keydown", e => {
+    const k = e.key.toLowerCase();
+    keyState[k] = true;
+
+    if ([
+      "arrowleft", "arrowright", "arrowup", " ", "arrowdown"
+    ].includes(k)) {
+      e.preventDefault();
+    }
+
+    if (["w", "arrowup", " "].includes(k) && !e.repeat) {
+      jumpQueued = true;
+    }
+
+    if (["j", "x"].includes(k) && !e.repeat) {
+      attackQueued = true;
+    }
+
+    if (k === "escape" && gameState === "playing") {
+      openPanel(
+        "Tạm nghỉ 🌙",
+        "Bạn đang ở " + level.name +
+        ". Nhấn tiếp tục để chơi tiếp.",
+        "Tiếp tục chơi",
+        "paused"
+      );
+    }
+  });
+
+  window.addEventListener("keyup", e => {
+    keyState[e.key.toLowerCase()] = false;
+  });
+
+  window.addEventListener("blur", () => {
+    for (const k in keyState) keyState[k] = false;
+touchState.left = false;
+    touchState.right = false;
+  });
+
+  // Nút di chuyển dành cho điện thoại.
+  document.querySelectorAll("[data-hold]").forEach(btn => {
+    const action = btn.dataset.hold;
+
+    const down = e => {
+      e.preventDefault();
+      touchState[action] = true;
+    };
+
+    const up = e => {
+      e.preventDefault();
+      touchState[action] = false;
+    };
+
+    btn.addEventListener("pointerdown", down);
+    btn.addEventListener("pointerup", up);
+    btn.addEventListener("pointercancel", up);
+    btn.addEventListener("pointerleave", up);
+  });
+
+  // Nút nhảy và phép thuật trên điện thoại.
+  document.querySelectorAll("[data-action]").forEach(btn => {
+    const action = btn.dataset.action;
+
+    btn.addEventListener("pointerdown", e => {
+      e.preventDefault();
+
+      if (action === "jump") {
+        jumpQueued = true;
+      } else {
+        attackQueued = true;
+      }
+    });
+  });
+
+  const heldLeft = () =>
+    keyState["a"] || keyState["arrowleft"] || touchState.left;
+
+  const heldRight = () =>
+    keyState["d"] || keyState["arrowright"] || touchState.right;
+
+  function overlaps(a, b) {
+    return (
+      a.x < b.x + b.w &&
+      a.x + a.w > b.x &&
+      a.y < b.y + b.h &&
+      a.y + a.h > b.y
+    );
+  }
+
+  function solidsNow() {
+    const arr = level.solids.slice();
+
+    if (level.bridge && level.switch && level.switch.active) {
+      arr.push(level.bridge);
+    }
+
+    return arr;
+  }
+
+  function sparkle(x, y, color = "#fff2a6", amount = 9) {
+    for (let i = 0; i < amount; i++) {
+      particles.push({
+        x,
+        y,
+        vx: (Math.random() - 0.5) * 4,
+        vy: -Math.random() * 3 - 0.5,
+        life: 24 + Math.random() * 20,
+        color,
+        size: 2 + Math.random() * 4
+      });
+    }
+  }
+
+  function hurtPlayer() {
+    if (player.invincible > 0) return;
+
+    hearts--;
+    player.invincible = 105;
+    player.vy = -7;
+    player.vx = -player.face * 4;
+
+    flashTimer = 14;
+    updateHUD();
+
+    sparkle(
+      player.x + player.w / 2,
+      player.y + 20,
+      "#ff91b6",
+      14
+    );
+
+    if (hearts <= 0) {
+      openPanel(
+        "Ôi, thử lại nhé! 💗",
+        "Mây Nhỏ hết tim mất rồi. Hãy thu thập chìa khóa " +
+        "và thử né quái vật cẩn thận hơn nhé!",
+        "Chơi lại",
+        "dead"
+      );
+    }
+  }
+
+  function update() {
+    if (gameState !== "playing") return;
+
+    frame++;
+
+    if (toastTimer > 0) toastTimer--;
+    if (flashTimer > 0) flashTimer--;
+    if (player.invincible > 0) player.invincible--;
+    if (attackCooldown > 0) attackCooldown--;
+    if (player.attackTimer > 0) player.attackTimer--;
+
+    let dir = 0;
+
+    if (heldLeft()) dir--;
+    if (heldRight()) dir++;
+
+    player.vx = dir * 4;
+
+    if (dir !== 0) {
+      player.face = dir;
+    }
+
+    if (jumpQueued && player.grounded) {
+      player.vy = -11.7;
+      player.grounded = false;
+
+      sparkle(
+        player.x + 15,
+        player.y + 45,
+        "#ffffff",
+5
+      );
+    }
+
+    jumpQueued = false;
+
+    if (attackQueued && attackCooldown === 0) {
+      player.attackTimer = 13;
+      attackCooldown = 30;
+
+      sparkle(
+        player.x + player.w / 2 + player.face * 24,
+        player.y + 24,
+        "#fff2ad",
+        5
+      );
+    }
+
+    attackQueued = false;
+
+    const solids = solidsNow();
+
+    // Di chuyển ngang và xử lý va chạm.
+    player.x += player.vx;
+
+    for (const s of solids) {
+      if (overlaps(player, s)) {
+        if (player.vx > 0) {
+          player.x = s.x - player.w;
+        } else if (player.vx < 0) {
+          player.x = s.x + s.w;
+        }
+      }
+    }
+
+    // Trọng lực và va chạm theo chiều dọc.
+    const oldY = player.y;
+
+    player.vy = Math.min(player.vy + 0.55, 13);
+    player.y += player.vy;
+    player.grounded = false;
+
+    for (const s of solids) {
+      if (
+        player.x + player.w > s.x &&
+        player.x < s.x + s.w
+      ) {
+        if (
+          player.vy >= 0 &&
+          oldY + player.h <= s.y + 8 &&
+          player.y + player.h >= s.y
+        ) {
+          player.y = s.y - player.h;
+          player.vy = 0;
+          player.grounded = true;
+        } else if (
+          player.vy < 0 &&
+          oldY >= s.y + s.h - 2 &&
+          player.y <= s.y + s.h &&
+          player.y + player.h > s.y
+        ) {
+          player.y = s.y + s.h;
+          player.vy = 0;
+        }
+      }
+    }
+
+    player.x = Math.max(
+      0,
+      Math.min(level.width - player.w, player.x)
+    );
+
+    // Nếu rơi khỏi bản đồ, đưa nhân vật về điểm đầu màn.
+    if (player.y > H + 130) {
+      hearts--;
+      updateHUD();
+
+      if (hearts <= 0) {
+        openPanel(
+          "Rơi xuống mất rồi! ☁️",
+          "Không sao, hãy thử lại màn này nhé.",
+          "Chơi lại",
+          "dead"
+        );
+        return;
+      }
+
+      player.x = 48;
+      player.y = 420;
+      player.vx = 0;
+      player.vy = 0;
+      player.invincible = 90;
+
+      setToast("Cẩn thận vực sâu nhé!", 100);
+    }
+
+    // Thu thập chìa khóa.
+    for (const k of level.keys) {
+      if (
+        !k.taken &&
+        overlaps(player, {
+          x: k.x - 10,
+          y: k.y - 12,
+          w: 20,
+          h: 25
+        })
+      ) {
+        k.taken = true;
+        keysFound++;
+
+        updateHUD();
+        sparkle(k.x, k.y, "#ffe36b", 16);
+        setToast("Đã nhặt chìa khóa! ✨", 75);
+      }
+    }
+
+    // Công tắc mở cây cầu ở màn 2.
+    if (
+      level.switch &&
+      !level.switch.active &&
+      overlaps(player, {
+        x: level.switch.x - 5,
+        y: level.switch.y - 8,
+        w: level.switch.w + 10,
+        h: level.switch.h + 12
+      })
+    ) {
+      level.switch.active = true;
+
+      sparkle(
+        level.switch.x + 16,
+        level.switch.y,
+        "#c6a6ff",
+        20
+      );
+
+      setToast("Cầu bí mật đã mở! Đi tiếp thôi!", 150);
+    }
+
+    // Quái vật tuần tra.
+    for (const m of level.monsters) {
+if (!m.alive) continue;
+
+      m.x += m.dir * 1.15;
+
+      if (m.x < m.min) {
+        m.x = m.min;
+        m.dir = 1;
+      }
+
+      if (m.x > m.max) {
+        m.x = m.max;
+        m.dir = -1;
+      }
+
+      // Tạo luồng phép thuật để đẩy lùi quái vật.
+      if (player.attackTimer > 0) {
+        const hitbox = {
+          x: player.face > 0
+            ? player.x + player.w
+            : player.x - 44,
+          y: player.y + 8,
+          w: 44,
+          h: 32
+        };
+
+        if (overlaps(hitbox, m) && !m.hitThisSwing) {
+          m.hitThisSwing = true;
+          m.hp--;
+
+          m.x += player.face * 28;
+          m.dir = player.face;
+
+          sparkle(m.x + m.w / 2, m.y + 15, "#d8baff", 10);
+
+          if (m.hp <= 0) {
+            m.alive = false;
+
+            sparkle(
+              m.x + m.w / 2,
+              m.y + 15,
+              "#fff1ad",
+              16
+            );
+
+            setToast("Quái vật biến thành bụi sao! ✨", 65);
+          }
+        }
+      } else {
+        m.hitThisSwing = false;
+      }
+
+      if (overlaps(player, m)) {
+        hurtPlayer();
+      }
+    }
+
+    // Cổng cần đủ 3 chìa khóa mới mở được.
+    if (overlaps(player, level.portal)) {
+      if (keysFound === 3) {
+        sparkle(
+          level.portal.x + 20,
+          level.portal.y + 35,
+          "#fff4aa",
+          25
+        );
+
+        if (levelIndex < levels.length - 1) {
+          openPanel(
+            "Qua màn thành công! 🌟",
+            `Bạn đã vượt qua ${level.name}. ` +
+            "Màn tiếp theo sẽ khó hơn một chút!",
+            "Đến màn tiếp theo",
+            "levelDone"
+          );
+        } else {
+          openPanel(
+            "Bạn đã hoàn thành! 🎉",
+            "Tuyệt vời! Mây Nhỏ đã thu thập tất cả chìa khóa " +
+            "và vượt qua cả 3 vùng đất.",
+            "Chơi lại từ đầu",
+            "won"
+          );
+        }
+      } else if (frame % 50 === 0) {
+        setToast(
+          `Còn thiếu ${3 - keysFound} chìa khóa nữa!`,
+          70
+        );
+      }
+    }
+
+    // Cập nhật các hạt sáng.
+    particles = particles.filter(p => p.life > 0);
+
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.12;
+      p.life--;
+    }
+
+    // Camera bám theo nhân vật.
+    cameraX = Math.max(
+      0,
+      Math.min(level.width - W, player.x - W * 0.36)
+    );
+  }
+
+  // Các hàm vẽ đồ họa.
+  function roundRect(x, y, w, h, r, fill, stroke, line = 2) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+
+    if (fill) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+
+    if (stroke) {
+      ctx.lineWidth = line;
+      ctx.strokeStyle = stroke;
+      ctx.stroke();
+    }
+  }
+
+  function drawBackground() {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+
+    g.addColorStop(0, level.sky[0]);
+    g.addColorStop(1, level.sky[1]);
+
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // Mặt trời hoặc mặt trăng.
+    if (levelIndex < 2) {
+ctx.fillStyle = "#fff6c9";
+      ctx.beginPath();
+      ctx.arc(790 - cameraX * 0.08, 92, 35, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#fffbe8";
+      ctx.beginPath();
+      ctx.arc(778 - cameraX * 0.08, 82, 8, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = "#fff8cb";
+      ctx.beginPath();
+      ctx.arc(790 - cameraX * 0.08, 92, 27, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = level.sky[0];
+      ctx.beginPath();
+      ctx.arc(803 - cameraX * 0.08, 82, 25, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Mây.
+    for (let i = 0; i < 7; i++) {
+      const x =
+        ((i * 185 - cameraX * 0.22 + 80) %
+          (W + 160) + W + 160) % (W + 160) - 70;
+
+      const y = 85 + (i % 3) * 42;
+
+      ctx.fillStyle =
+        levelIndex === 2 ? "#fff9ddaa" : "#ffffff9b";
+
+      ctx.beginPath();
+      ctx.arc(x, y, 18, 0, Math.PI * 2);
+      ctx.arc(x + 20, y - 8, 22, 0, Math.PI * 2);
+      ctx.arc(x + 43, y, 17, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Đồi phía xa.
+    for (let i = 0; i < 7; i++) {
+      const x =
+        ((i * 190 - cameraX * 0.35) %
+          (W + 220) + W + 220) % (W + 220) - 90;
+
+      ctx.fillStyle =
+        levelIndex === 2 ? "#555d91" : "#a9dcd1";
+
+      ctx.beginPath();
+      ctx.ellipse(x, H - 36, 145, 85, 0, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle =
+        levelIndex === 2 ? "#62669c" : "#b9e7d9";
+
+      ctx.beginPath();
+      ctx.ellipse(
+        x + 80, H - 20, 130, 70,
+        0, Math.PI, Math.PI * 2
+      );
+      ctx.fill();
+    }
+
+    // Sao cho màn chơi ban đêm.
+    if (levelIndex === 2) {
+      for (let i = 0; i < 34; i++) {
+        const x = (i * 127 + 35 - cameraX * 0.12) % (W + 20);
+
+        ctx.fillStyle = "#fff8d8";
+        ctx.fillRect(x, 30 + (i * 47) % 300, 2, 2);
+      }
+    }
+  }
+
+  function drawSolids() {
+    const solids = solidsNow();
+
+    for (const s of solids) {
+      const x = Math.floor(s.x - cameraX);
+
+      if (x + s.w < 0 || x > W) continue;
+
+      ctx.fillStyle =
+        levelIndex === 2 ? "#69649b" : "#d9a7bd";
+
+      ctx.fillRect(x, s.y, s.w, s.h);
+
+      ctx.fillStyle =
+        levelIndex === 2 ? "#91d8c7" : "#93d9ab";
+
+      ctx.fillRect(x, s.y, s.w, 7);
+
+      ctx.fillStyle =
+        levelIndex === 2 ? "#8983b7" : "#f5d0dc";
+
+      for (let px = x + 8; px < x + s.w - 5; px += 22) {
+        ctx.fillRect(px, s.y + 13, 9, 4);
+        ctx.fillRect(px + 7, s.y + 31, 8, 4);
+      }
+
+      ctx.fillStyle = "#ffffff66";
+      ctx.fillRect(x, s.y, s.w, 2);
+    }
+  }
+
+  function drawKey(k) {
+    if (k.taken) return;
+
+    const x = k.x - cameraX;
+    const y = k.y + Math.sin((frame + k.x) * 0.06) * 4;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(frame * 0.04 + k.x) * 0.12);
+
+    ctx.shadowColor = "#ffe36b";
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = "#eaa72e";
+    ctx.lineWidth = 6;
+
+    ctx.beginPath();
+    ctx.arc(0, -5, 7, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+ctx.moveTo(0, 2);
+    ctx.lineTo(0, 20);
+    ctx.lineTo(9, 20);
+    ctx.moveTo(0, 12);
+    ctx.lineTo(7, 12);
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#fff2a0";
+
+    ctx.beginPath();
+    ctx.arc(-2, -7, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawPortal() {
+    const p = level.portal;
+    const x = p.x - cameraX;
+    const y = p.y;
+
+    const glow = 0.5 + 0.5 * Math.sin(frame * 0.08);
+
+    ctx.save();
+    ctx.shadowColor = "#c6a7ff";
+    ctx.shadowBlur = 18 + glow * 15;
+
+    roundRect(x, y, p.w, p.h, 24, "#9177d9", "#fff0ff", 3);
+
+    ctx.shadowBlur = 0;
+
+    roundRect(
+      x + 8, y + 8, p.w - 16, p.h - 16,
+      18, "#d7c8ff", "#fdf7ff", 2
+    );
+
+    ctx.fillStyle = "#fff6b7";
+    ctx.beginPath();
+    ctx.arc(x + p.w / 2, y + 18, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawSwitch() {
+    if (!level.switch) return;
+
+    const s = level.switch;
+    const x = s.x - cameraX;
+    const y = s.y;
+
+    ctx.save();
+
+    ctx.fillStyle = s.active ? "#9ff2c4" : "#b69aff";
+    ctx.shadowColor = s.active ? "#81e8b5" : "#c4a9ff";
+    ctx.shadowBlur = 12;
+
+    roundRect(
+      x, y, s.w, s.h, 10,
+      s.active ? "#8be0ac" : "#ac8ae8",
+      "#fff", 3
+    );
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#fff";
+
+    ctx.beginPath();
+    ctx.arc(x + s.w / 2, y + 10, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawMonster(m) {
+    if (!m.alive) return;
+
+    const x = m.x - cameraX;
+    const y = m.y;
+
+    ctx.save();
+
+    ctx.fillStyle = "#9b83df";
+    ctx.strokeStyle = "#65529a";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(x + 3, y + 31);
+    ctx.quadraticCurveTo(x - 2, y + 8, x + 13, y + 4);
+    ctx.quadraticCurveTo(x + 25, y - 2, x + 33, y + 13);
+    ctx.quadraticCurveTo(x + 43, y + 34, x + 28, y + 35);
+    ctx.quadraticCurveTo(x + 13, y + 40, x + 3, y + 31);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#fff";
+
+    ctx.beginPath();
+    ctx.arc(x + 14, y + 18, 5, 0, Math.PI * 2);
+    ctx.arc(x + 28, y + 18, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#453858";
+
+    ctx.beginPath();
+    ctx.arc(x + 15 + m.dir, y + 19, 2, 0, Math.PI * 2);
+    ctx.arc(x + 29 + m.dir, y + 19, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "#453858";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.arc(x + 22, y + 25, 4, 0.1, Math.PI - 0.1);
+    ctx.stroke();
+
+    ctx.fillStyle = "#f8a2c1";
+
+    ctx.beginPath();
+    ctx.arc(x + 8, y + 25, 4, 0, Math.PI * 2);
+    ctx.arc(x + 34, y + 25, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawPlayer() {
+    if (
+      player.invincible > 0 &&
+      Math.floor(frame / 5) % 2 === 0
+    ) {
+      return;
+    }
+
+    const x = player.x - cameraX;
+    const y = player.y;
+
+    ctx.save();
+
+    // Hai tai nhỏ.
+    ctx.fillStyle = "#fffdf6";
+    ctx.strokeStyle = "#75677c";
+    ctx.lineWidth = 2.4;
+
+    ctx.beginPath();
+ctx.ellipse(x + 7, y + 9, 6, 10, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(x + 23, y + 8, 6, 10, 0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Thân tròn.
+    ctx.fillStyle = "#fffdf7";
+
+    ctx.beginPath();
+    ctx.ellipse(x + 15, y + 28, 16, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Má hồng.
+    ctx.fillStyle = "#f3a4ba";
+
+    ctx.beginPath();
+    ctx.ellipse(x + 5, y + 30, 4, 2.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 25, y + 30, 4, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mắt.
+    ctx.fillStyle = "#4f4257";
+
+    ctx.beginPath();
+    ctx.arc(x + 10, y + 24, 2, 0, Math.PI * 2);
+    ctx.arc(x + 20, y + 24, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Miệng.
+    ctx.strokeStyle = "#4f4257";
+    ctx.lineWidth = 1.7;
+
+    ctx.beginPath();
+    ctx.arc(x + 15, y + 28, 3, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+
+    // Phép thuật lấp lánh.
+    if (player.attackTimer > 0) {
+      ctx.globalAlpha = 0.75;
+      ctx.strokeStyle = "#fff1a8";
+      ctx.lineWidth = 5;
+
+      const ax = x + 15 + player.face * 31;
+
+      ctx.beginPath();
+      ctx.arc(
+        ax, y + 25, 17,
+        player.face > 0 ? -0.95 : Math.PI - 0.95,
+        player.face > 0 ? 0.95 : Math.PI + 0.95
+      );
+      ctx.stroke();
+
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(ax + player.face * 10, y + 22, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life / 35);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x - cameraX, p.y, p.size, p.size);
+    }
+
+    ctx.globalAlpha = 1;
+  }
+
+  function draw() {
+    drawBackground();
+    drawSolids();
+    drawSwitch();
+
+    level.keys.forEach(drawKey);
+
+    drawPortal();
+    level.monsters.forEach(drawMonster);
+    drawPlayer();
+    drawParticles();
+
+    // Thông báo trong game.
+    if (gameState === "playing" && toastTimer > 0) {
+      ctx.save();
+
+      ctx.font = "bold 19px system-ui";
+      ctx.textAlign = "center";
+
+      const width = Math.min(
+        620,
+        ctx.measureText(toast).width + 42
+      );
+
+      roundRect(
+        (W - width) / 2, 18, width, 42,
+        18, "#fffaf0ef", "#ffffff", 2
+      );
+
+      ctx.fillStyle = "#574565";
+      ctx.fillText(toast, W / 2, 45);
+
+      ctx.restore();
+    }
+
+    if (flashTimer > 0) {
+      ctx.fillStyle = `rgba(255,110,155,${flashTimer / 70})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  function loop() {
+    update();
+
+    if (level && player) {
+      draw();
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  loadLevel(0);
+  gameState = "menu";
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
